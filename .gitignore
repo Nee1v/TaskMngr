@@ -1,12 +1,12 @@
-# Python
+#Python
 venv/
 __pycache__/
 *.pyc
 
-# Node / React
+#Node / React
 frontend/node_modules/
 frontend/build/
 
-# OS / IDE
+#OS / IDE
 .DS_Store
 .vscode/

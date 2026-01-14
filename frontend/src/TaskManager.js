@@ -1,45 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export default function TaskManager() {
   const [todoTasks, setTodoTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
   const [undoStack, setUndoStack] = useState([]);
-  const [goal, setGoal] = useState("Bread"); // Default goal
-  const goals = ["Bread", "Pizza", "Cake"]; // Add more goals as needed
+  const [goal, setGoal] = useState("Bread");
+  const goals = ["Bread", "Pizza", "Cake"];
 
-  // Fetch tasks whenever goal changes
-  useEffect(() => {
-    fetchTasks();
-  }, [goal]);
-
-  const fetchTasks = async () => {
-    // Fetch TODO tasks
-    const todoRes = await fetch(
-      `http://127.0.0.1:8000/tasks/todo?goal=${goal}`
-    );
+  // 1. Fetch logic
+  const fetchTasks = useCallback(async () => {
+    const todoRes = await fetch(`http://127.0.0.1:8000/tasks/todo?goal=${goal}`);
     const todos = await todoRes.json();
     setTodoTasks(todos);
 
-    // Fetch Completed tasks
-    const completedRes = await fetch(
-      `http://127.0.0.1:8000/tasks/completed?goal=${goal}`
-    );
+    const completedRes = await fetch(`http://127.0.0.1:8000/tasks/completed?goal=${goal}`);
     const completed = await completedRes.json();
     setCompletedTasks(completed);
+  }, [goal]);
 
-    // Reset undo stack when switching goals
+  // 2. Goal-switch reset logic
+  useEffect(() => {
+    fetchTasks();
     setUndoStack([]);
-  };
 
-  const completeTask = async (task) => {
-    // Update backend
-    await fetch(`http://127.0.0.1:8000/tasks/${task.id}/complete`, {
+    return () => {
+      fetch(`http://127.0.0.1:8000/tasks/reset/${goal}`, { method: "POST" });
+    };
+  }, [goal, fetchTasks]);
+
+  // 3. Manual reset function
+  const resetCurrentGoal = async () => {
+    if (!window.confirm(`Reset all progress for the ${goal} goal?`)) return;
+
+    await fetch(`http://127.0.0.1:8000/tasks/reset/${goal}`, {
       method: "POST",
     });
 
-    // Update frontend
-    setTodoTasks(todoTasks.filter((t) => t.id !== task.id));
-    setCompletedTasks([...completedTasks, task]);
+    await fetchTasks();
+    setUndoStack([]);
+  };
+
+  // 4. Action functions
+  const completeTask = async (task) => {
+    await fetch(`http://127.0.0.1:8000/tasks/${task.id}/complete`, {
+      method: "POST",
+    });
+    await fetchTasks();
     setUndoStack([...undoStack, task]);
   };
 
@@ -50,48 +56,56 @@ export default function TaskManager() {
     await fetch(`http://127.0.0.1:8000/tasks/${lastTask.id}/undo`, {
       method: "POST",
     });
-
-    setCompletedTasks(completedTasks.filter((t) => t.id !== lastTask.id));
-    setTodoTasks([...todoTasks, lastTask]);
+    await fetchTasks();
     setUndoStack(undoStack.slice(0, -1));
   };
 
+  // 5. The UI Return
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Task Manager</h1>
+      <h1>Quest Tracker</h1>
 
-      {/* Goal selection */}
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ 
+        marginBottom: "20px", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "20px" 
+      }}>
         <label>
-          Select Goal:{" "}
+          Current Quest:{" "}
           <select value={goal} onChange={(e) => setGoal(e.target.value)}>
             {goals.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
+              <option key={g} value={g}>{g}</option>
             ))}
           </select>
         </label>
+
+        <button 
+          onClick={resetCurrentGoal}
+          style={{
+            backgroundColor: "#ff4d4d",
+            color: "white",
+            border: "none",
+            padding: "6px 15px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          Reset Current Goal
+        </button>
       </div>
 
-      {/* Columns */}
       <div style={{ display: "flex", gap: "50px" }}>
-        {/* TODO column */}
         <div style={{ flex: 1 }}>
-          <h2>TODO</h2>
-          {todoTasks.length === 0 && <p>No tasks to do!</p>}
+          <h2>Available Objectives</h2>
+          {todoTasks.length === 0 && <p>Quest Complete!</p>}
           <ul>
             {todoTasks.map((task) => (
               <li
                 key={task.id}
-                style={{
-                  padding: "10px",
-                  border: "1px solid #ccc",
-                  marginBottom: "5px",
-                  cursor: "pointer",
-                }}
+                style={{ padding: "10px", border: "1px solid #ccc", marginBottom: "5px", cursor: "pointer" }}
                 onClick={() => completeTask(task)}
-                title={task.description}
               >
                 {task.title}
               </li>
@@ -99,28 +113,20 @@ export default function TaskManager() {
           </ul>
         </div>
 
-        {/* Completed column */}
         <div style={{ flex: 1 }}>
-          <h2>Completed</h2>
-          <button
-            onClick={undoTask}
-            disabled={undoStack.length === 0}
+          <h2>Finished Objectives</h2>
+          <button 
+            onClick={undoTask} 
+            disabled={undoStack.length === 0} 
             style={{ marginBottom: "10px" }}
           >
-            Undo
+            Undo Action
           </button>
-          {completedTasks.length === 0 && <p>No completed tasks yet.</p>}
           <ul>
             {completedTasks.map((task) => (
-              <li
-                key={task.id}
-                style={{
-                  padding: "10px",
-                  border: "1px solid #ccc",
-                  marginBottom: "5px",
-                  backgroundColor: "#e0ffe0",
-                }}
-                title={task.description}
+              <li 
+                key={task.id} 
+                style={{ padding: "10px", border: "1px solid #ccc", marginBottom: "5px", backgroundColor: "#e0ffe0" }}
               >
                 {task.title}
               </li>
