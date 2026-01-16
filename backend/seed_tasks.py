@@ -4,25 +4,58 @@ from models import Task
 db = SessionLocal()
 
 def seed_data():
-    #Clear ALL existing tasks to start fresh
     db.query(Task).delete()
     db.commit()
 
-    # ------------------ ORIGINS EASTER EGG ------------------
-    
-    gen1 = Task(title="Power on Gen 1", description="Capture Generator 1 in Spawn area", goal="Origins")
-    gen2 = Task(title="Power on Gen 2", description="Capture Generator 2 near Tank Station", goal="Origins")
-    gen3 = Task(title="Power on Gen 3", description="Capture Generator 3 near the Shield door", goal="Origins")
-    gen4 = Task(title="Power on Gen 4", description="Capture Generator 4 at Juggernog", goal="Origins")
-    gen5 = Task(title="Power on Gen 5", description="Capture Generator 5 at Stamin-Up", goal="Origins")
-    gen6 = Task(title="Power on Gen 6", description="Capture Generator 6 at the Church", goal="Origins")
+    # Create a master list to hold everything
+    all_tasks = []
 
-    db.add_all([gen1, gen2, gen3, gen4, gen5, gen6])
-    
-    # --------------------------------------------------------
+    # ------------------ ORIGINS: GENERATORS ------------------
+    for i in range(1, 7):
+        desc_map = {
+            1: "Spawn area", 2: "Near Tank Station", 3: "Near the Shield door",
+            4: "At Juggernog", 5: "At Stamin-Up", 6: "At the Church"
+        }
+        all_tasks.append(Task(
+            title=f"Power on Gen {i}", 
+            description=f"Capture Generator {i} ({desc_map[i]})", 
+            goal="Origins"
+        ))
 
+    # ------------------ ORIGINS: MAXIS DRONE ------------------
+    d_rotor = Task(
+        title="Collect Maxis Drone Rotor", 
+        description="Top of mound, Left of gramophone table, OR Bottom level of excavation scaffolding.", 
+        goal="Origins"
+    )
+    d_brain = Task(
+        title="Collect Maxis Drone Brain", 
+        description="On bench as soon as you spawn (Gen 1)", 
+        goal="Origins"
+    )
+    d_frame = Task(
+        title="Collect Maxis Drone Frame", 
+        description="Tank exit path out of church, Tank return path, OR Bottom of ice tunnel.", 
+        goal="Origins"
+    )
+
+    build_drone = Task(
+        title="Build Maxis Drone", 
+        description="Use the collected parts at any workbench.", 
+        goal="Origins"
+    )
+    
+    build_drone.depends_on.extend([d_rotor, d_brain, d_frame])
+
+    #Add the drone tasks to our master list
+    all_tasks.extend([d_rotor, d_brain, d_frame, build_drone])
+
+    # ------------------ FINAL COMMIT ------------------
+    #Add everything in one go
+    db.add_all(all_tasks)
     db.commit()
-    print("Database cleared. Origins seeded with 6 individual Generator tasks.")
+    
+    print(f"Origins seeded: {len(all_tasks)} tasks added successfully.")
 
 if __name__ == "__main__":
     seed_data()
