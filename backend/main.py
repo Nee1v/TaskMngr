@@ -31,31 +31,48 @@ def root():
     return {"status": "ok"}
 
 @app.get("/tasks/todo")
-def get_todo_tasks(goal: str = "Bread", db: Session = Depends(get_db)):
-    # Fetch ALL tasks for this goal so we can see statuses of dependencies
-    all_goal_tasks = (
-        db.query(Task)
-        .options(joinedload(Task.depends_on))
-        .filter(Task.goal == goal)
-        .all()
-    )
+def get_todo_tasks(goal: str, db: Session = Depends(get_db)):
+    # Get all incomplete tasks for this goal
+    tasks = db.query(Task).filter(Task.goal == goal, Task.completed == False).all()
+    
+    available_tasks = []
+    for task in tasks:
+        # A task is "Available" if all its dependencies are completed
+        if all(dep.completed for dep in task.depends_on):
+            available_tasks.append({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description
+            })
+            
+    return available_tasks
 
-    tasks_to_return = []
-    for task in all_goal_tasks:
-        if not task.completed:
-            # Task is 'To-Do' only if all its dependencies are completed
-            if all(dep.completed for dep in task.depends_on):
-                tasks_to_return.append(task)
-
-    return tasks_to_return
+def build_task_tree(task):
+    """Recursively builds a tree of completed dependencies."""
+    return {
+        "id": task.id,
+        "title": task.title,
+        "description": task.description,
+        "sub_tasks": [build_task_tree(sub) for sub in task.depends_on if sub.completed]
+    }
 
 @app.get("/tasks/completed")
-def get_completed_tasks(goal: str = "Bread", db: Session = Depends(get_db)):
-    return (
-        db.query(Task)
-        .filter(Task.completed == True, Task.goal == goal)
-        .all()
-    )
+def get_completed_tasks(goal: str, db: Session = Depends(get_db)):
+    all_completed = db.query(Task).filter(Task.goal == goal, Task.completed == True).all()
+    
+    # 1. Identify which tasks are "children" (dependencies) of others
+    child_ids = set()
+    for task in all_completed:
+        for dep in task.depends_on:
+            child_ids.add(dep.id)
+
+    # 2. Only return the "Root" tasks (those not inside another folder)
+    # The build_task_tree function will handle nesting everything else inside them
+    root_tasks = [
+        build_task_tree(task) for task in all_completed 
+        if task.id not in child_ids
+    ]
+    return root_tasks
 
 @app.post("/tasks/{task_id}/complete")
 def complete_task(task_id: int, db: Session = Depends(get_db)):
