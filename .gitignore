@@ -1,12 +1,13 @@
-#Python
-venv/
+# Database
+tasks.db
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+venv/
+.env
 
-#Node / React
-frontend/node_modules/
-frontend/build/
-
-#OS / IDE
+# React/Node
+node_modules/
+build/
 .DS_Store
-.vscode/
