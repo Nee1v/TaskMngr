@@ -15,13 +15,13 @@ def seed_data():
         all_tasks = []
 
         # ------------------ ORIGINS: BASIC TOOLS ------------------
-        collect_shovel = Task(title="Collect shovel", description="Locations : \n - In hallway where door unlock to gen 3 is\n - Immediately after spawning to the right of Maxis Brain, leaning on wall\n*NOTE* : Needed to dig up Ice Staff parts during snow weather", goal="Origins")
+        collect_shovel = Task(title="Collect shovel", description="<br><img src='/origins_images/shovel.jpg' class='task-img' />\n*NOTE* : Needed to dig up Ice Staff parts during snow weather", goal="Origins")
 
         # ------------------ ORIGINS: ZOMBIE SHIELD ------------------
         s_handle = Task(title="Collect shield part (Handle)", description="Locations (Gen 2 trenches) : \n - Inside wheelbarrow in the room on the right directly after exiting spawn room\n - End of gen 2 trenches in wheelbarrow\n - Top of Tank Station near large pipe", goal="Origins")
         s_visor = Task(title="Collect shield part (Visor)", description="Locations (Gen 3 trenches) : \n - Bottom of Fire Tunnel directly outside spawn on left\n - Wheelbarrow in room opposite of Fire Tunnel\n - Underneath bridge next to Gen 3, part is next to crate", goal="Origins")
         s_frame = Task(title="Collect shield part (Frame)", description="Locations (No Man's Land) : \n - Inside giant's right footprint near Gen 4\n - Inside giant's right footprint near Gen 5\n - Inside giant's right footprint next to the Mound", goal="Origins")
-        build_shield = Task(title="Build Shield at worbench", description="Workbenches are located at most major locations, wind tunnel workbench is the most effective", goal="Origins")
+        build_shield = Task(title="Build Shield at worbench", description="Workbenches are located at most major locations, wind tunnel workbench is the most effective (Near gen 4)", goal="Origins")
 
         # ------------------ ORIGINS: GENERATORS ------------------
         gen1 = Task(title="Power on Gen 1", description="Capture Generator 1 (Spawn area)", goal="Origins")

@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload, Session
 
 app = FastAPI()
 
-# Allow frontend localhost to access backend
+#Allow frontend localhost to access backend
 origins = ["http://localhost:3000"]
 
 app.add_middleware(
@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database Dependency
+#Database Dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -26,18 +26,20 @@ def get_db():
     finally:
         db.close()
 
+#When visiting home page simply return status ok
 @app.get("/")
 def root():
     return {"status": "ok"}
 
+#For tasks/todo path
 @app.get("/tasks/todo")
 def get_todo_tasks(goal: str, db: Session = Depends(get_db)):
-    # Get all incomplete tasks for this goal
+    #Get all incomplete tasks for this goal
     tasks = db.query(Task).filter(Task.goal == goal, Task.completed == False).all()
     
     available_tasks = []
     for task in tasks:
-        # A task is "Available" if all its dependencies are completed
+        #A task is "Available" if all its dependencies are completed
         if all(dep.completed for dep in task.depends_on):
             available_tasks.append({
                 "id": task.id,
@@ -47,8 +49,8 @@ def get_todo_tasks(goal: str, db: Session = Depends(get_db)):
             
     return available_tasks
 
+#Recursively build a tree of dependencies, so we can fold layers into most dependent task
 def build_task_tree(task):
-    """Recursively builds a tree of completed dependencies."""
     return {
         "id": task.id,
         "title": task.title,
@@ -60,14 +62,14 @@ def build_task_tree(task):
 def get_completed_tasks(goal: str, db: Session = Depends(get_db)):
     all_completed = db.query(Task).filter(Task.goal == goal, Task.completed == True).all()
     
-    # 1. Identify which tasks are "children" (dependencies) of others
+    #Identify which tasks are "children" (dependencies) of others
     child_ids = set()
     for task in all_completed:
         for dep in task.depends_on:
             child_ids.add(dep.id)
 
-    # 2. Only return the "Root" tasks (those not inside another folder)
-    # The build_task_tree function will handle nesting everything else inside them
+    #Only return the "Root" tasks (those not inside another folder)
+    #The build_task_tree function will handle nesting everything else inside them
     root_tasks = [
         build_task_tree(task) for task in all_completed 
         if task.id not in child_ids
@@ -82,7 +84,7 @@ def complete_task(task_id: int, db: Session = Depends(get_db)):
     
     task.completed = True
     db.commit()
-    db.refresh(task) # Refresh to ensure we have the latest state
+    db.refresh(task) #Refresh to ensure we have the latest state
     return {"message": f"Task '{task.title}' marked as completed"}
 
 @app.post("/tasks/{task_id}/undo")
@@ -98,7 +100,7 @@ def undo_task(task_id: int, db: Session = Depends(get_db)):
 
 @app.post("/tasks/reset/{goal}")
 def reset_goal_tasks(goal: str, db: Session = Depends(get_db)):
-    # Find all completed tasks for this goal
+    #Find all completed tasks for this goal
     tasks = db.query(Task).filter(Task.goal == goal, Task.completed == True).all()
     
     for task in tasks:
